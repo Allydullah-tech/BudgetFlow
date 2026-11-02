@@ -122,6 +122,20 @@
     setTimeout(function () { location.href = dest; }, reduce ? 700 : 1600);
   }
 
+  function resendBox(anchor, email) {
+    var old = document.getElementById('resendBox'); if (old) old.remove();
+    var box = document.createElement('div'); box.id = 'resendBox'; box.className = 'center mt';
+    box.innerHTML = '<button type="button" class="btn btn-ghost" id="resendBtn">Resend verification email</button><p class="muted" id="resendMsg" style="margin-top:8px"></p>';
+    anchor.parentNode.insertBefore(box, anchor.nextSibling);
+    var btn = box.querySelector('#resendBtn'), msg = box.querySelector('#resendMsg');
+    btn.addEventListener('click', async function () {
+      btn.disabled = true; msg.textContent = 'Sending…';
+      try { var j = await Api.post('../api/auth/resend-verification', { email: email }); msg.textContent = j.message || 'A new link has been sent. Please check your inbox and spam folder.'; }
+      catch (e) { msg.textContent = (e && e.message) || 'Could not send the email. Please try again.'; }
+      setTimeout(function () { btn.disabled = false; }, 30000);
+    });
+  }
+
   var VIEWS = {
     login: function () {
       var msg = qp.get('out') ? html`<div class="banner ok">${U.icon('check')} You have been logged out.</div>` : qp.get('expired') ? html`<div class="banner warn">${U.icon('clock')} Your session expired. Please log in again.</div>` : qp.get('reset') ? html`<div class="banner ok">${U.icon('check')} Password updated. Please log in.</div>` : qp.get('verify') ? html`<div class="banner info" id="verifyMsg">${U.icon('mail')} Verifying your email…</div>` : '';
@@ -136,7 +150,7 @@
         after: function () {
           wire($('#f'), async function (d) {
             try { await Api.post('../api/auth/login', { email: d.email, password: d.password }); }
-            catch (err) { if (err && err.offline) err.message = 'No internet connection. Logging in needs internet the first time on this device. Once you are logged in, the app works offline.'; throw err; }
+            catch (err) { if (err && err.offline) err.message = 'No internet connection. Logging in needs internet the first time on this device. Once you are logged in, the app works offline.'; if (err && err.code === 'verify') resendBox($('#f'), d.email); throw err; }
             var t = await Api.csrf(), me = (await Api.get('../api/auth/me')).data; Api.setCsrf(me.csrf || t);
             welcomeBack(me.user.name, me.user.role === 'super_admin' ? 'admin-dashboard.html' : (safeNext() || 'dashboard.html'));
           }, { busyText: 'Logging in…' });
@@ -163,7 +177,7 @@
           var f = $('#f'); strengthMeter(f, 'password');
           wire(f, async function (d) {
             var j = await Api.post('../api/auth/register', d);
-            if (j.data && j.data.needs_verification) { happy(); U.mount($('#auBody'), html`<div class="center">${U.savedCheck()}<h1>Check your email</h1><p class="muted">We sent a verification link to <b>${d.email}</b>. Open it to activate your account.</p><a class="btn btn-primary" href="login.html" style="margin-top:14px">Go to login</a></div>`); return; }
+            if (j.data && j.data.needs_verification) { happy(); U.mount($('#auBody'), html`<div class="center">${U.savedCheck()}<h1>Check your email</h1><p class="muted">We sent a verification link to <b>${d.email}</b>. Open it to activate your account. Check your spam folder if you do not see it.</p><a class="btn btn-primary" href="login.html" style="margin-top:14px">Go to login</a><div id="resendAnchor"></div></div>`); resendBox($('#resendAnchor'), d.email); return; }
             await Api.post('../api/auth/login', { email: d.email, password: d.password });
             var me = (await Api.get('../api/auth/me')).data; Api.setCsrf(me.csrf);
             welcomeBack(me.user.name, 'dashboard.html');

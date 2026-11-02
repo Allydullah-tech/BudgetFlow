@@ -12,14 +12,104 @@ final class AuthenticationService
         return (is_https() ? 'https' : 'http') . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost');
     }
 
+    /**
+     * Sends a plain-text email. Uses SMTP when MAIL_HOST is set in backend/.env (recommended: PHP mail()
+     * is blocked or unreliable on most shared/free hosts). Falls back to PHP mail() otherwise.
+     * Failures are always written to the PHP error log so they can be diagnosed.
+     */
     public static function sendMail(string $to, string $subject, string $body): bool
     {
         $name = (string)setting('app_name', 'BudgetFlow');
-        $from = (string)env('MAIL_FROM', 'no-reply@' . preg_replace('/:\d+$/', '', $_SERVER['HTTP_HOST'] ?? 'localhost'));
-        $headers = "From: $name <$from>\r\nContent-Type: text/plain; charset=utf-8\r\nMIME-Version: 1.0";
-        $ok = @mail($to, '=?UTF-8?B?' . base64_encode($subject) . '?=', $body, $headers);
-        if (!$ok && APP_DEBUG) error_log("MAIL (not sent) to $to: $subject\n$body");
+        $host = trim((string)env('MAIL_HOST', ''));
+        $from = trim((string)env('MAIL_FROM', ''));
+        if ($from === '') $from = ($host !== '' && filter_var(env('MAIL_USERNAME', ''), FILTER_VALIDATE_EMAIL))
+            ? (string)env('MAIL_USERNAME') : 'no-reply@' . preg_replace('/:\\d+$/', '', $_SERVER['HTTP_HOST'] ?? 'localhost');
+        $encSubject = '=?UTF-8?B?' . base64_encode($subject) . '?=';
+        $encName = '=?UTF-8?B?' . base64_encode($name) . '?=';
+
+        if ($host !== '') {
+            try {
+                self::smtpSend($host, $from, $encName, $to, $encSubject, $body);
+                return true;
+            } catch (Throwable $e) {
+                error_log("MAIL SMTP failed to $to: " . $e->getMessage());
+                return false;
+            }
+        }
+
+        $headers = "From: $encName <$from>\r\nReply-To: $from\r\nContent-Type: text/plain; charset=utf-8\r\nMIME-Version: 1.0";
+        $ok = @mail($to, $encSubject, $body, $headers);
+        if (!$ok) error_log("MAIL (mail() failed) to $to: $subject" . (APP_DEBUG ? "\n$body" : ''));
         return $ok;
+    }
+
+    /** Minimal SMTP client (SSL on 465 or STARTTLS on 587, AUTH LOGIN/PLAIN). Throws on any failure. */
+    private static function smtpSend(string $host, string $from, string $encName, string $to, string $encSubject, string $body): void
+    {
+        $port = (int)env('MAIL_PORT', '465');
+        $enc = strtolower((string)env('MAIL_ENCRYPTION', $port === 465 ? 'ssl' : 'tls')); // ssl | tls | none
+        $user = (string)env('MAIL_USERNAME', '');
+        $pass = (string)env('MAIL_PASSWORD', '');
+        $remote = ($enc === 'ssl' ? 'ssl://' : 'tcp://') . $host . ':' . $port;
+        $ctx = stream_context_create(['ssl' => ['verify_peer' => true, 'verify_peer_name' => true, 'SNI_enabled' => true, 'peer_name' => $host]]);
+        $fp = @stream_socket_client($remote, $errno, $errstr, 15, STREAM_CLIENT_CONNECT, $ctx);
+        if (!$fp) throw new RuntimeException("Cannot connect to $host:$port ($errstr)");
+        stream_set_timeout($fp, 15);
+
+        $read = function () use ($fp): string {
+            $data = '';
+            while (($line = fgets($fp, 515)) !== false) {
+                $data .= $line;
+                if (strlen($line) < 4 || $line[3] === ' ') break;
+            }
+            return $data;
+        };
+        $cmd = function (string $c, array $ok) use ($fp, $read): string {
+            fwrite($fp, $c . "\r\n");
+            $r = $read();
+            if (!in_array((int)substr($r, 0, 3), $ok, true)) throw new RuntimeException('SMTP error after ' . (str_starts_with($c, 'AUTH') || strlen($c) > 40 ? 'command' : $c) . ': ' . trim($r));
+            return $r;
+        };
+
+        try {
+            $greet = $read();
+            if ((int)substr($greet, 0, 3) !== 220) throw new RuntimeException('SMTP greeting failed: ' . trim($greet));
+            $ehlo = preg_replace('/[^a-z0-9.\-]/i', '', (string)($_SERVER['HTTP_HOST'] ?? 'localhost')) ?: 'localhost';
+            $cmd("EHLO $ehlo", [250]);
+            if ($enc === 'tls') {
+                $cmd('STARTTLS', [220]);
+                if (!@stream_socket_enable_crypto($fp, true, STREAM_CRYPTO_METHOD_TLS_CLIENT)) throw new RuntimeException('STARTTLS negotiation failed');
+                $cmd("EHLO $ehlo", [250]);
+            }
+            if ($user !== '') {
+                $cmd('AUTH LOGIN', [334]);
+                $cmd(base64_encode($user), [334]);
+                $cmd(base64_encode($pass), [235]);
+            }
+            $cmd('MAIL FROM:<' . $from . '>', [250]);
+            $cmd('RCPT TO:<' . $to . '>', [250, 251]);
+            $cmd('DATA', [354]);
+
+            $headers = [
+                'Date: ' . date('r'),
+                "From: $encName <$from>",
+                "To: <$to>",
+                "Reply-To: $from",
+                "Subject: $encSubject",
+                'Message-ID: <' . bin2hex(random_bytes(12)) . '@' . $ehlo . '>',
+                'MIME-Version: 1.0',
+                'Content-Type: text/plain; charset=utf-8',
+                'Content-Transfer-Encoding: 8bit',
+            ];
+            $msg = implode("\r\n", $headers) . "\r\n\r\n" . preg_replace('/^\./m', '..', str_replace(["\r\n", "\r"], "\n", $body));
+            $msg = str_replace("\n", "\r\n", str_replace("\r\n", "\n", $msg));
+            fwrite($fp, $msg . "\r\n.\r\n");
+            $r = $read();
+            if ((int)substr($r, 0, 3) !== 250) throw new RuntimeException('SMTP rejected message: ' . trim($r));
+            @fwrite($fp, "QUIT\r\n");
+        } finally {
+            @fclose($fp);
+        }
     }
 
     public static function seedDefaults(int $uid): void
@@ -71,6 +161,22 @@ final class AuthenticationService
         $u = q_one('SELECT id FROM users WHERE id = ?', [$uid]);
         login_session($u);
         return ['needs_verification' => false];
+    }
+
+    /** Re-sends the verification link (invalidates older unused links). Silent for unknown/already-verified emails. */
+    public static function resendVerification(string $email): bool
+    {
+        $email = strtolower(trim($email));
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) return true;
+        $recent = (int)q_val('SELECT COUNT(*) FROM login_attempts WHERE ip = ? AND email = ? AND created_at > ?', [client_ip(), '#verify', gmdate('Y-m-d H:i:s', time() - 3600)]);
+        q('INSERT INTO login_attempts (email, ip, success) VALUES (?,?,1)', ['#verify', client_ip()]);
+        if ($recent >= 5) throw new ApiException('Too many requests. Please try again later.', 429);
+        $u = q_one("SELECT id, full_name FROM users WHERE email = ? AND deleted_at IS NULL AND status = 'pending_verification'", [$email]);
+        if (!$u) return true;
+        q('UPDATE account_verification_tokens SET used_at = ? WHERE user_id = ? AND used_at IS NULL', [now_utc(), $u['id']]);
+        $token = random_token();
+        q('INSERT INTO account_verification_tokens (user_id, token_hash, expires_at) VALUES (?,?,?)', [$u['id'], hash_token($token), gmdate('Y-m-d H:i:s', time() + 86400)]);
+        return self::sendMail($email, 'Verify your email', "Hello {$u['full_name']},\n\nPlease verify your email address:\n" . self::appUrl() . "/login.html?verify=$token\n\nThis link expires in 24 hours.");
     }
 
     public static function verifyEmail(string $token): void

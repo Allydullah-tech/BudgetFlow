@@ -43,5 +43,9 @@ return function (string $method, array $p): void {
         AuthenticationService::resetPassword((string)($in['token'] ?? ''), (string)($in['password'] ?? ''), (string)($in['confirm_password'] ?? ''));
         json_ok(null, 'Password updated. You can now log in.');
     }
+    if ($a === 'resend-verification') {
+        AuthenticationService::resendVerification((string)(input()['email'] ?? ''));
+        json_ok(null, 'If that account is waiting for verification, a new link has been sent.');
+    }
     if ($a === 'verify') { AuthenticationService::verifyEmail((string)(input()['token'] ?? '')); json_ok(null, 'Email verified. You can now log in.'); }
 };
