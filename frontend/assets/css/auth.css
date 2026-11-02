@@ -1,0 +1,120 @@
+/* ===== Auth pages (login / register / forgot / reset): animated scene + mascot + sliding cards =====
+   Everything moves with transform/opacity only (GPU), so it stays smooth on phones. Switched off for prefers-reduced-motion. */
+.au-page { margin: 0; background: #0a1220; }
+.au-wrap { position: relative; min-height: 100vh; min-height: 100dvh; overflow: hidden; isolation: isolate; color: #fff; background: radial-gradient(120% 90% at 15% 0%, #16294d 0%, #0b1426 55%, #070d19 100%); }
+
+/* ---------- Scene ---------- */
+.au-scene { position: absolute; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+.au-layer { position: absolute; inset: -6%; will-change: transform; transition: transform 1.1s cubic-bezier(.2, 1, .3, 1); }
+.au-blob { position: absolute; border-radius: 50%; will-change: transform; }
+.au-blob.b1 { width: 60vmax; height: 60vmax; left: -18vmax; top: -22vmax; background: radial-gradient(circle, rgba(61, 139, 255, .55), rgba(61, 139, 255, 0) 62%); animation: au-drift1 22s ease-in-out infinite alternate; }
+.au-blob.b2 { width: 52vmax; height: 52vmax; right: -16vmax; bottom: -20vmax; background: radial-gradient(circle, rgba(139, 123, 255, .42), rgba(139, 123, 255, 0) 62%); animation: au-drift2 26s ease-in-out infinite alternate; }
+.au-blob.b3 { width: 34vmax; height: 34vmax; left: 38%; top: 30%; background: radial-gradient(circle, rgba(56, 209, 255, .26), rgba(56, 209, 255, 0) 62%); animation: au-drift3 18s ease-in-out infinite alternate; }
+.au-grid { position: absolute; inset: 0; background-image: linear-gradient(rgba(255, 255, 255, .045) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, .045) 1px, transparent 1px); background-size: 56px 56px; -webkit-mask-image: radial-gradient(ellipse at 50% 40%, #000 0%, transparent 75%); mask-image: radial-gradient(ellipse at 50% 40%, #000 0%, transparent 75%); }
+.au-spark { position: absolute; left: var(--x); top: var(--y); width: var(--s); height: var(--s); background: #fff; opacity: 0; clip-path: polygon(50% 0, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0 50%, 38% 38%); animation: au-twinkle var(--t, 3.6s) ease-in-out var(--d, 0s) infinite; }
+.au-coin { position: absolute; left: var(--x); top: var(--y); width: var(--s); height: var(--s); animation: au-float var(--t, 7s) ease-in-out var(--d, 0s) infinite alternate; }
+.au-coin i { display: grid; place-items: center; width: 100%; height: 100%; border-radius: 50%; font: 800 calc(var(--s) * .27)/1 var(--font); font-style: normal; color: #7a5200; background: radial-gradient(circle at 32% 28%, #fff3c4, #f3c969 46%, #c98f1f); box-shadow: inset 0 0 0 3px rgba(255, 255, 255, .28), 0 12px 26px rgba(0, 0, 0, .4); animation: au-spin var(--sp, 5s) linear infinite; }
+.au-shoot { position: absolute; left: var(--x); top: var(--y); width: 150px; height: 2px; border-radius: 2px; background: linear-gradient(90deg, transparent, #fff); opacity: 0; animation: au-shoot 8s ease-in infinite var(--d, 0s); }
+.au-streaks { position: absolute; inset: 0; overflow: hidden; }
+.au-streaks i { position: absolute; left: 0; top: var(--y); width: var(--w); height: 2px; border-radius: 2px; background: linear-gradient(90deg, transparent, rgba(255, 255, 255, .9), transparent); opacity: 0; transform: translate3d(110vw, 0, 0); }
+.au-scene.go-fwd .au-streaks i { animation: au-streak-f .7s cubic-bezier(.3, .1, .2, 1) both; animation-delay: calc(var(--i) * 45ms); }
+.au-scene.go-back .au-streaks i { animation: au-streak-b .7s cubic-bezier(.3, .1, .2, 1) both; animation-delay: calc(var(--i) * 45ms); }
+
+/* ---------- Stage ---------- */
+.au-stage { position: relative; z-index: 1; min-height: 100vh; min-height: 100dvh; max-width: 1200px; margin: 0 auto; padding: 32px clamp(16px, 4vw, 40px); display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, .95fr); align-items: center; gap: clamp(24px, 5vw, 72px); }
+.au-hero { position: relative; }
+.au-brand { display: inline-flex; align-items: center; gap: 12px; color: #fff; text-decoration: none; font-weight: 800; font-size: 1.15rem; letter-spacing: -.2px; animation: au-walk .7s cubic-bezier(.2, 1.1, .3, 1) both; }
+.au-brand img { width: 46px; height: 46px; object-fit: contain; filter: drop-shadow(0 8px 16px rgba(0, 0, 0, .4)); }
+.au-headline { font-family: var(--font); font-size: clamp(2.4rem, 4.6vw, 4rem); line-height: 1.04; font-weight: 800; letter-spacing: -1.4px; margin: 30px 0 14px; color: #fff; }
+.au-headline .w { display: inline-block; overflow: hidden; vertical-align: top; padding: 0 .06em .12em 0; }
+.au-headline .w b { display: inline-block; font-weight: inherit; animation: au-word .75s cubic-bezier(.2, 1, .3, 1) both; animation-delay: calc(var(--i) * 70ms); }
+.au-headline.out .w b { animation: au-word-out .24s cubic-bezier(.5, 0, .9, .4) both; animation-delay: calc(var(--i) * 25ms); }
+.au-headline .w:last-child b, .au-headline em { color: #8fc0ff; font-style: normal; }
+.au-sub { color: #b8c4dc; font-size: 1.12rem; max-width: 30em; margin: 0; animation: au-walk .7s cubic-bezier(.2, 1.1, .3, 1) .25s both; }
+.au-sub.out { animation: au-sub-out .22s ease-in both; }
+.au-gcards { position: relative; height: 250px; max-width: 470px; margin-top: 36px; }
+.au-px { position: absolute; inset: 0; will-change: transform; transition: transform .6s cubic-bezier(.2, 1, .3, 1); }
+.au-gcard { position: absolute; padding: 16px 18px; border-radius: 20px; color: #fff; background: rgba(22, 34, 60, .78); border: 1px solid rgba(255, 255, 255, .14); box-shadow: 0 24px 50px rgba(0, 0, 0, .38); }
+.au-gcard small { display: block; color: #9aa9c6; font-size: .78rem; } .au-gcard b { display: block; font-size: 1.45rem; letter-spacing: -.5px; margin: 4px 0 2px; } .au-gcard em { font-style: normal; color: #5ad08a; font-size: .8rem; font-weight: 600; }
+.au-gcard.g1 { left: 0; top: 6px; width: 250px; animation: au-bob 6s ease-in-out infinite; }
+.au-gcard.g2 { right: 0; bottom: 0; width: 190px; animation: au-bob 7s ease-in-out -2s infinite; }
+.au-gcard.g3 { left: 34px; bottom: 6px; padding: 10px 16px; border-radius: 999px; font-size: .85rem; font-weight: 600; animation: au-bob 5.4s ease-in-out -1s infinite; }
+.au-gcard.g3 i { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #5ad08a; margin-right: 8px; box-shadow: 0 0 0 4px rgba(90, 208, 138, .22); }
+.au-gcard svg { display: block; width: 100%; height: 44px; margin-top: 8px; } .au-gcard svg path { stroke-dasharray: 340; stroke-dashoffset: 340; animation: au-draw 2.2s .6s cubic-bezier(.3, .8, .3, 1) forwards; }
+.au-bars { display: flex; align-items: flex-end; gap: 9px; height: 62px; margin-top: 10px; }
+.au-bars i { display: block; width: 16px; height: var(--h); border-radius: 6px 6px 3px 3px; background: linear-gradient(#8fc0ff, #2f74e0); transform-origin: bottom; animation: au-bar 2.6s ease-in-out infinite; animation-delay: calc(var(--i) * .18s); }
+
+/* ---------- Card + mascot ---------- */
+.au-panel { display: flex; justify-content: center; perspective: 1100px; }
+.au-deck { position: relative; width: min(440px, 100%); padding-top: 54px; }
+.au-mascot-pos { position: absolute; left: 0; right: 0; top: 0; z-index: 3; display: flex; justify-content: center; pointer-events: none; }
+.au-mascot { width: 108px; height: 108px; animation: au-bob 3.4s ease-in-out infinite; filter: drop-shadow(0 14px 18px rgba(0, 0, 0, .35)); }
+.au-mascot svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.au-mascot .m-pupil { transition: transform .14s ease-out; }
+.au-mascot .m-eye { transform-box: fill-box; transform-origin: center; animation: au-blink 5.2s infinite; }
+.au-mascot .m-eye + .m-eye { animation-delay: 0s; }
+.au-mascot .m-hands { opacity: 0; transform: translateY(46px); transition: transform .38s cubic-bezier(.3, 1.5, .4, 1), opacity .2s; }
+.au-mascot.is-hide .m-hands { opacity: 1; transform: none; }
+.au-mascot .m-mouth { transition: opacity .15s; } .au-mascot .m-sad, .au-mascot .m-open { opacity: 0; }
+.au-mascot.is-sad .m-smile, .au-mascot.is-happy .m-smile { opacity: 0; } .au-mascot.is-sad .m-sad { opacity: 1; } .au-mascot.is-happy .m-open { opacity: 1; }
+.au-mascot.is-happy { animation: au-jump .75s cubic-bezier(.3, 1.6, .4, 1) 2; } .au-mascot.is-sad { animation: au-nope .5s ease-in-out; } .au-mascot.is-hop { animation: au-jump .6s cubic-bezier(.3, 1.6, .4, 1); }
+.au-mascot .m-spark { transform-box: fill-box; transform-origin: center; animation: au-twinkle 2.8s ease-in-out infinite; }
+
+.au-card { position: relative; background: var(--surface); color: var(--text); border: 1px solid color-mix(in srgb, #fff 14%, var(--border)); border-radius: 28px; padding: 66px 28px 22px; box-shadow: 0 34px 90px rgba(0, 0, 0, .5), 0 0 0 1px rgba(255, 255, 255, .04); transform-origin: 50% 60%; will-change: transform; }
+.au-card.first { animation: au-card-up .7s cubic-bezier(.2, 1.15, .3, 1) both; }
+.au-card.out-fwd { animation: au-card-out-f .26s cubic-bezier(.55, 0, .85, .35) both; pointer-events: none; } .au-card.out-back { animation: au-card-out-b .26s cubic-bezier(.55, 0, .85, .35) both; pointer-events: none; }
+.au-card.in-fwd { animation: au-card-in-f .62s cubic-bezier(.2, 1.15, .3, 1) both; } .au-card.in-back { animation: au-card-in-b .62s cubic-bezier(.2, 1.15, .3, 1) both; }
+.au-card.au-shake { animation: au-shake .45s ease-in-out; }
+.au-card h1 { font-family: var(--font); font-size: 1.6rem; font-weight: 800; letter-spacing: -.4px; text-align: center; margin: 0 0 6px; color: var(--heading); }
+.au-card .muted { text-align: center; }
+.au-card .form-grid { display: grid; grid-template-columns: 1fr; gap: 14px; }
+.au-card form { margin-top: 16px; }
+.au-card .field input:not([type=checkbox]) { min-height: 50px; border-radius: 14px; font-size: 16px; background: var(--surface-2); }
+.au-card .field input:focus { border-color: #3d8bff; box-shadow: 0 0 0 4px rgba(61, 139, 255, .26); }
+.au-card .btn { width: 100%; min-height: 50px; border-radius: 14px; }
+.au-card .btn-primary { box-shadow: 0 10px 26px rgba(61, 139, 255, .4); }
+.au-forgot { margin: -2px 0 0; text-align: right; font-size: .88rem; }
+.au-credit { margin: 18px 0 0; }
+.au-load { display: flex; justify-content: center; gap: 8px; padding: 34px 0 40px; } .au-load i { width: 11px; height: 11px; border-radius: 50%; background: #3d8bff; animation: au-dot 1s ease-in-out infinite; } .au-load i:nth-child(2) { animation-delay: .15s; } .au-load i:nth-child(3) { animation-delay: .3s; }
+
+/* contents walk in one after another */
+.au-body.walk-up { --dx: 0px; } .au-body.walk-fwd { --dx: 28px; } .au-body.walk-back { --dx: -28px; }
+.au-body[class*="walk-"] > :not(form), .au-body[class*="walk-"] .form-grid > *, .au-body[class*="walk-"] form > :not(.form-grid) { animation: au-walk .55s cubic-bezier(.2, 1.1, .3, 1) both; animation-delay: calc(var(--k, 0) * 50ms + 50ms); }
+.au-body > :nth-child(1) { --k: 0; } .au-body > :nth-child(2) { --k: 1; } .au-body > :nth-child(3) { --k: 2; } .au-body > :nth-child(4) { --k: 2; } .au-body > :nth-child(n+5) { --k: 8; }
+.au-body .form-grid > :nth-child(1) { --k: 2; } .au-body .form-grid > :nth-child(2) { --k: 3; } .au-body .form-grid > :nth-child(3) { --k: 4; } .au-body .form-grid > :nth-child(4) { --k: 5; } .au-body .form-grid > :nth-child(5) { --k: 6; } .au-body .form-grid > :nth-child(n+6) { --k: 7; }
+.au-body form > :not(.form-grid) { --k: 7; } .au-body form > :not(.form-grid) ~ :not(.form-grid) { --k: 8; } .au-body form > :not(.form-grid) ~ :not(.form-grid) ~ :not(.form-grid) { --k: 9; }
+
+/* ---------- Phones & tablets ---------- */
+@media (max-width: 899px) {
+  .au-stage { grid-template-columns: 1fr; align-content: center; justify-items: center; gap: 8px; padding: calc(18px + env(safe-area-inset-top)) 16px calc(24px + env(safe-area-inset-bottom)); }
+  .au-hero { width: 100%; display: flex; justify-content: center; } .au-headline, .au-sub, .au-gcards { display: none; }
+  .au-brand { font-size: 1.05rem; } .au-brand img { width: 36px; height: 36px; }
+  .au-mascot { width: 92px; height: 92px; } .au-deck { padding-top: 46px; } .au-card { padding: 58px 20px 20px; border-radius: 26px; }
+  .au-coin.c4, .au-coin.c5 { display: none; }
+}
+
+/* ---------- Keyframes ---------- */
+@keyframes au-drift1 { to { transform: translate3d(9vmax, 7vmax, 0) scale(1.12); } } @keyframes au-drift2 { to { transform: translate3d(-8vmax, -6vmax, 0) scale(1.1); } } @keyframes au-drift3 { to { transform: translate3d(-6vmax, 8vmax, 0) scale(.9); } }
+@keyframes au-twinkle { 0%, 100% { opacity: 0; transform: scale(.3) rotate(0); } 50% { opacity: .95; transform: scale(1) rotate(45deg); } }
+@keyframes au-float { from { transform: translate3d(0, 0, 0) rotate(-6deg); } to { transform: translate3d(0, -26px, 0) rotate(8deg); } }
+@keyframes au-spin { from { transform: perspective(260px) rotateY(0); } to { transform: perspective(260px) rotateY(360deg); } }
+@keyframes au-shoot { 0% { opacity: 0; transform: translate3d(0, 0, 0) rotate(28deg); } 2% { opacity: 1; } 11% { opacity: 0; transform: translate3d(560px, 300px, 0) rotate(28deg); } 100% { opacity: 0; transform: translate3d(560px, 300px, 0) rotate(28deg); } }
+@keyframes au-streak-f { from { opacity: 0; transform: translate3d(110vw, 0, 0); } 25% { opacity: 1; } to { opacity: 0; transform: translate3d(-60vw, 0, 0); } }
+@keyframes au-streak-b { from { opacity: 0; transform: translate3d(-60vw, 0, 0); } 25% { opacity: 1; } to { opacity: 0; transform: translate3d(110vw, 0, 0); } }
+@keyframes au-bob { 0%, 100% { transform: translate3d(0, 0, 0) rotate(-1deg); } 50% { transform: translate3d(0, -9px, 0) rotate(1.2deg); } }
+@keyframes au-bar { 0%, 100% { transform: scaleY(1); } 50% { transform: scaleY(.55); } }
+@keyframes au-draw { to { stroke-dashoffset: 0; } }
+@keyframes au-word { from { transform: translate3d(0, 112%, 0) rotate(7deg); } to { transform: none; } }
+@keyframes au-word-out { to { transform: translate3d(0, -112%, 0) rotate(-5deg); } }
+@keyframes au-sub-out { to { transform: translate3d(-30px, 0, 0); opacity: 0; } }
+@keyframes au-walk { from { transform: translate3d(var(--dx, 0px), 14px, 0); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes au-card-up { from { transform: translate3d(0, 70px, 0) scale(.93); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes au-card-out-f { to { transform: translate3d(-100px, 0, 0) rotateY(-18deg) scale(.92); opacity: 0; } } @keyframes au-card-out-b { to { transform: translate3d(100px, 0, 0) rotateY(18deg) scale(.92); opacity: 0; } }
+@keyframes au-card-in-f { from { transform: translate3d(100px, 0, 0) rotateY(18deg) scale(.92); opacity: 0; } 45% { opacity: 1; } to { transform: none; opacity: 1; } } @keyframes au-card-in-b { from { transform: translate3d(-100px, 0, 0) rotateY(-18deg) scale(.92); opacity: 0; } 45% { opacity: 1; } to { transform: none; opacity: 1; } }
+@keyframes au-shake { 0%, 100% { transform: none; } 20% { transform: translate3d(-9px, 0, 0); } 40% { transform: translate3d(8px, 0, 0); } 60% { transform: translate3d(-5px, 0, 0); } 80% { transform: translate3d(3px, 0, 0); } }
+@keyframes au-blink { 0%, 93%, 100% { transform: scaleY(1); } 96% { transform: scaleY(.08); } }
+@keyframes au-jump { 0%, 100% { transform: translate3d(0, 0, 0) scale(1); } 35% { transform: translate3d(0, -26px, 0) scale(1.06, .96); } 65% { transform: translate3d(0, 0, 0) scale(.96, 1.05); } }
+@keyframes au-nope { 0%, 100% { transform: none; } 20% { transform: translate3d(-8px, 0, 0) rotate(-6deg); } 45% { transform: translate3d(8px, 0, 0) rotate(6deg); } 70% { transform: translate3d(-4px, 0, 0) rotate(-3deg); } }
+@keyframes au-dot { 0%, 100% { transform: translate3d(0, 0, 0); opacity: .5; } 50% { transform: translate3d(0, -10px, 0); opacity: 1; } }
+
+@media (prefers-reduced-motion: reduce) { .au-wrap *, .au-wrap *::before, .au-wrap *::after { animation: none !important; transition: none !important; } .au-spark { opacity: .6; } .au-sub, .au-brand, .au-headline .w b { opacity: 1; transform: none; } }

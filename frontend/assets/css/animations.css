@@ -1,0 +1,52 @@
+/* Lightweight animations: transform + opacity only. All disabled under prefers-reduced-motion. */
+@keyframes fadeIn { from { opacity: 0 } to { opacity: 1 } }
+@keyframes fadeOut { to { opacity: 0 } }
+@keyframes fadeUp { from { opacity: 0; transform: translateY(14px) } to { opacity: 1; transform: none } }
+@keyframes slideUp { from { opacity: 0; transform: translateY(26px) } to { opacity: 1; transform: none } }
+@keyframes slideIn { from { opacity: 0; transform: translateX(30px) } to { opacity: 1; transform: none } }
+@keyframes slideOut { to { opacity: 0; transform: translateX(30px) } }
+@keyframes scaleIn { from { opacity: 0; transform: scale(.88) } to { opacity: 1; transform: none } }
+@keyframes scaleOut { to { opacity: 0; transform: scale(.92) } }
+@keyframes dropIn { from { opacity: 0; transform: translateY(-8px) scale(.96) } to { opacity: 1; transform: none } }
+@keyframes pop { 0% { transform: scale(0) } 70% { transform: scale(1.25) } 100% { transform: scale(1) } }
+@keyframes pulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(61, 139, 255, .55) } 60% { box-shadow: 0 0 0 7px rgba(61, 139, 255, 0) } }
+@keyframes ring { 0%, 100% { transform: rotate(0) } 15% { transform: rotate(16deg) } 30% { transform: rotate(-14deg) } 45% { transform: rotate(10deg) } 60% { transform: rotate(-6deg) } }
+@keyframes spin { to { transform: rotate(360deg) } }
+@keyframes spinSlow { to { transform: rotate(360deg) } }
+@keyframes float { 0%, 100% { transform: translateY(0) } 50% { transform: translateY(-12px) } }
+@keyframes shimmer { to { transform: translateX(100%) } }
+@keyframes growBar { from { transform: scaleY(0) } to { transform: scaleY(1) } }
+@keyframes growY { from { transform: scaleY(0) } to { transform: scaleY(1) } }
+@keyframes draw { to { stroke-dashoffset: 0 } }
+@keyframes load { from { width: 0 } to { width: 100% } }
+@keyframes shake { 0%, 100% { transform: translateX(0) } 25% { transform: translateX(-5px) } 75% { transform: translateX(5px) } }
+@keyframes sweep { from { transform: translateX(-120%) skewX(-20deg) } to { transform: translateX(260%) skewX(-20deg) } }
+@keyframes glow { 0%, 100% { opacity: .55; transform: scale(1) } 50% { opacity: .95; transform: scale(1.08) } }
+
+/* Page + section entrance (staggered via --i set by animations.js) */
+.view-enter { animation: fadeUp .4s var(--ease) both; }
+.reveal { opacity: 0; transform: translateY(18px); transition: opacity .6s var(--ease), transform .6s var(--ease); transition-delay: calc(var(--i, 0) * 70ms); }
+.reveal.in { opacity: 1; transform: none; }
+.stagger > * { animation: fadeUp .5s var(--ease) both; animation-delay: calc(var(--i, 0) * 60ms); }
+.page-leave { opacity: 0; transform: translateY(-6px); transition: opacity .18s ease, transform .18s ease; }
+
+/* Welcome popup (MABUMBATECH) */
+.wp-overlay { position: fixed; inset: 0; z-index: 400; display: grid; place-items: center; padding: 20px; background: rgba(8, 12, 22, .72); backdrop-filter: blur(6px); animation: fadeIn .6s ease both; }
+.wp-card { position: relative; width: min(480px, 100%); text-align: center; padding: 34px 26px 28px; border-radius: 24px; color: #fff; overflow: hidden; background: radial-gradient(circle at 50% 0%, #344054 0%, #101828 60%, #0a1220 100%); border: 1px solid rgba(61, 139, 255, .55); box-shadow: 0 30px 80px rgba(0, 0, 0, .6), 0 0 60px rgba(61, 139, 255, .18); animation: scaleIn .8s .25s var(--ease) both; }
+.wp-card::after { content: ""; position: absolute; top: 0; left: 0; width: 45%; height: 100%; background: linear-gradient(100deg, transparent, rgba(190, 214, 255, .22), transparent); animation: sweep 2.6s 1.1s ease-in-out 2 both; pointer-events: none; }
+.wp-logo { position: relative; width: min(260px, 72%); margin: 4px auto 10px; animation: scaleIn .9s .5s var(--ease) both; }
+.wp-logo::before { content: ""; position: absolute; inset: -18% -10%; background: radial-gradient(circle, rgba(61, 139, 255, .4), transparent 65%); animation: glow 3.2s ease-in-out infinite; z-index: -1; }
+.wp-logo img { width: 100%; display: block; }
+.wp-wordmark { font-family: var(--font-display); font-size: 1.9rem; font-weight: 700; letter-spacing: 3px; color: var(--gold-300); }
+.wp-card h2 { color: #fff; font-size: 1.6rem; margin: 6px 0 4px; animation: fadeUp .8s .9s var(--ease) both; }
+.wp-card p { color: #d0d5dd; margin: 0 0 22px; animation: fadeUp .8s 1.15s var(--ease) both; } .wp-card p b { color: var(--gold-300); }
+.wp-card p a.wp-brand { position: relative; z-index: 2; color: var(--gold-300); text-decoration: underline; text-decoration-color: transparent; text-underline-offset: 3px; transition: text-decoration-color .2s, opacity .2s; }
+.wp-card p a.wp-brand:hover, .wp-card p a.wp-brand:focus-visible { text-decoration-color: currentColor; opacity: .9; }
+.wp-card .btn { animation: fadeUp .8s 1.35s var(--ease) both; }
+.wp-close { position: absolute; top: 10px; right: 10px; width: 40px; height: 40px; border-radius: 50%; border: 0; background: rgba(255, 255, 255, .1); color: #fff; cursor: pointer; z-index: 2; } .wp-close:hover { background: rgba(255, 255, 255, .22); }
+.wp-overlay.closing { animation: fadeOut .35s ease forwards; } .wp-overlay.closing .wp-card { animation: scaleOut .35s ease forwards; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; animation-delay: 0s !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
+  .reveal { opacity: 1; transform: none; } .chart .line { stroke-dashoffset: 0; } .progress i { transition: none; }
+}

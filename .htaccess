@@ -1,0 +1,60 @@
+# Expense Tracker - web root routing (Apache 2.4, mod_rewrite + mod_headers).
+# Point the site's document root at this folder. /api/* -> backend, everything else -> frontend/.
+Options -Indexes
+DirectoryIndex frontend/index.html
+AddDefaultCharset utf-8
+AddType application/manifest+json .webmanifest
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  # JSON API
+  RewriteRule ^api/ backend/api/index.php [L,QSA]
+  # Automatic updates: build id + service worker are generated from the files' own timestamps
+  RewriteRule ^version\.json$ backend/version.php [L]
+  RewriteRule ^service-worker\.js$ backend/sw.php [L]
+  # Never serve database files or hidden files
+  RewriteRule ^database/ - [F,L]
+  RewriteRule (^|/)\.(?!well-known) - [F,L]
+  # Frontend at the site root (e.g. /dashboard.html -> frontend/dashboard.html)
+  RewriteRule ^$ frontend/index.html [L]
+  RewriteCond %{REQUEST_URI} !/(frontend|backend|database)/
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteRule ^(.+)$ frontend/$1 [L]
+</IfModule>
+
+<IfModule mod_headers.c>
+  Header always set X-Content-Type-Options "nosniff"
+  Header always set X-Frame-Options "DENY"
+  Header always set Referrer-Policy "strict-origin-when-cross-origin"
+  Header always set Permissions-Policy "camera=(), microphone=(), geolocation=()"
+  <FilesMatch "\.html$">
+    Header always set Content-Security-Policy "default-src 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'; manifest-src 'self'; worker-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+  </FilesMatch>
+  # Pages, scripts and styles: always re-check with the server so updates appear automatically.
+  <FilesMatch "\.(html|js|css)$">
+    Header set Cache-Control "no-cache, must-revalidate"
+  </FilesMatch>
+  <FilesMatch "(service-worker\.js|manifest\.json)$">
+    Header set Cache-Control "no-cache"
+    Header set Service-Worker-Allowed "/"
+  </FilesMatch>
+  # The update check must always be live.
+  <FilesMatch "^version\.json$">
+    Header set Cache-Control "no-store, no-cache, must-revalidate, max-age=0"
+  </FilesMatch>
+</IfModule>
+
+<IfModule mod_expires.c>
+  ExpiresActive On
+  ExpiresByType image/png "access plus 7 days"
+  ExpiresByType image/jpeg "access plus 7 days"
+  ExpiresByType image/svg+xml "access plus 7 days"
+  ExpiresByType image/x-icon "access plus 7 days"
+  ExpiresByType image/webp "access plus 7 days"
+</IfModule>
+
+# Compress text files so pages load faster on slow connections.
+<IfModule mod_deflate.c>
+  AddOutputFilterByType DEFLATE text/html text/css text/javascript application/javascript application/json application/manifest+json image/svg+xml text/plain
+</IfModule>

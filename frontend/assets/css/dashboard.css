@@ -1,0 +1,15 @@
+/* Dashboard + landing page specific styles */
+.hello { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; padding: 22px; border-radius: var(--radius-lg); color: #fff; background: radial-gradient(circle at 85% 0%, rgba(61, 139, 255, .28), transparent 45%), linear-gradient(135deg, var(--green-700), var(--green-900)); border-bottom: 4px solid var(--gold-500); box-shadow: var(--shadow); margin-bottom: 18px; overflow: hidden; position: relative; }
+.hello h2 { color: #fff; margin: 0 0 4px; font-size: 1.5rem; } .hello p { margin: 0; color: #d0d5dd; } .hello .btn-ghost { color: #fff; border-color: rgba(255, 255, 255, .35); } .hello img.deco { position: absolute; right: -12px; bottom: -22px; width: 150px; opacity: .14; pointer-events: none; }
+.quick { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; margin-bottom: 18px; } .quick button, .quick a { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 14px 8px; border-radius: 14px; border: 1px solid var(--border); background: var(--surface); color: var(--text) !important; font: inherit; font-weight: 600; font-size: .85rem; cursor: pointer; text-decoration: none; transition: transform .25s var(--ease), box-shadow .25s, border-color .25s; } .quick button:hover, .quick a:hover { transform: translateY(-3px); box-shadow: var(--shadow); border-color: var(--gold-500); } .quick .icon { width: 26px; height: 26px; color: var(--primary); } :root[data-theme="dark"] .quick .icon { color: var(--gold-300); }
+.dash-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; margin-top: 16px; } .dash-grid .span2 { grid-column: 1 / -1; }
+.donut-wrap { display: flex; gap: 18px; align-items: center; flex-wrap: wrap; justify-content: center; } .donut-wrap .chart { max-width: 210px; }
+.mini-list li { list-style: none; display: flex; justify-content: space-between; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--border); font-size: .92rem; } .mini-list { margin: 0; padding: 0; } .mini-list li:last-child { border: 0; }
+@media (max-width: 899px) { .dash-grid { grid-template-columns: 1fr; } }
+
+/* ===== Landing page styles live in landing.css (shared FAQ accordion kept here) ===== */
+.faq details { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 4px 18px; margin-bottom: 10px; transition: box-shadow .25s; } .faq details[open] { box-shadow: var(--shadow); border-color: var(--gold-500); } .faq summary { cursor: pointer; font-weight: 700; padding: 14px 0; list-style: none; display: flex; justify-content: space-between; gap: 10px; } .faq summary::after { content: "+"; font-size: 1.4rem; color: var(--gold-600); transition: transform .25s; } .faq details[open] summary::after { transform: rotate(45deg); } .faq details p { color: var(--muted); padding-bottom: 12px; margin: 0; animation: fadeUp .3s; }
+
+/* Keep amounts on one line */
+.stat .value { white-space: nowrap; font-size: clamp(1.05rem, 1.55vw, 1.45rem); }
+@media (max-width: 599px) { .stat .value { font-size: clamp(.95rem, 4.2vw, 1.15rem); } }

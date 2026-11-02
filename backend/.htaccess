@@ -1,0 +1,16 @@
+# Backend protection (Apache 2.4). Only api/index.php and install.php/uninstall.php may be requested directly.
+Options -Indexes
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteRule ^(config|helpers|middleware|services|storage)/ - [F,L]
+  RewriteRule ^api/(?!index\.php).+\.php$ - [F,L]
+  RewriteRule ^(bootstrap|cron)\.php$ - [F,L]
+</IfModule>
+<FilesMatch "^\.|\.(env|sql|log|lock|md|example)$">
+  Require all denied
+</FilesMatch>
+<IfModule mod_headers.c>
+  Header always set X-Content-Type-Options "nosniff"
+  Header always set X-Frame-Options "DENY"
+</IfModule>
+php_flag display_errors off
